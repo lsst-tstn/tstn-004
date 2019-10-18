@@ -1,7 +1,7 @@
-.. image:: https://img.shields.io/badge/dmtn--004-lsst.io-brightgreen.svg
-   :target: https://dmtn-004.lsst.io
-.. image:: https://travis-ci.com/lsst-tstn/dmtn-004.svg
-   :target: https://travis-ci.com/lsst-tstn/dmtn-004
+.. image:: https://img.shields.io/badge/tstn--004-lsst.io-brightgreen.svg
+   :target: https://tstn-004.lsst.io
+.. image:: https://travis-ci.com/lsst-tstn/tstn-004.svg
+   :target: https://travis-ci.com/lsst-tstn/tstn-004
 ..
   Uncomment this section and modify the DOI strings to include a Zenodo DOI badge in the README
   .. image:: https://zenodo.org/badge/doi/10.5281/zenodo.#####.svg
@@ -11,17 +11,17 @@
 Auxiliary Telescope (early) operations procedures.
 ##################################################
 
-DMTN-004
+TSTN-004
 ========
 
 This document describes the procedures for observing with the auxiliary telescope in the early stages of system integration and commission. The procedures are likely to change very rapidly in these stages so it is recommended that users keep a close eye on the document before doing any observations. Here we will also document some troubleshooting to commonly found issues. In case of questions contact the document authors. 
 
 **Links:**
 
-- Publication URL: https://dmtn-004.lsst.io
-- Alternative editions: https://dmtn-004.lsst.io/v
-- GitHub repository: https://github.com/lsst-tstn/dmtn-004
-- Build system: https://travis-ci.com/lsst-tstn/dmtn-004
+- Publication URL: https://tstn-004.lsst.io
+- Alternative editions: https://tstn-004.lsst.io/v
+- GitHub repository: https://github.com/lsst-tstn/tstn-004
+- Build system: https://travis-ci.com/lsst-tstn/tstn-004
 
 
 Build this technical note
@@ -31,8 +31,8 @@ You can clone this repository and build the technote locally with `Sphinx`_:
 
 .. code-block:: bash
 
-   git clone https://github.com/lsst-tstn/dmtn-004
-   cd dmtn-004
+   git clone https://github.com/lsst-tstn/tstn-004
+   cd tstn-004
    pip install -r requirements.txt
    make html
 
@@ -52,7 +52,7 @@ The `DM reStructuredText Style Guide`_ is a good resource for how we write reStr
 Remember that images and other types of assets should be stored in the ``_static/`` directory of this repository.
 See ``_static/README.rst`` for more information.
 
-The published technote at https://dmtn-004.lsst.io will be automatically rebuilt whenever you push your changes to the ``master`` branch on `GitHub <https://github.com/lsst-tstn/dmtn-004>`_.
+The published technote at https://tstn-004.lsst.io will be automatically rebuilt whenever you push your changes to the ``master`` branch on `GitHub <https://github.com/lsst-tstn/tstn-004>`_.
 
 Updating metadata
 =================
