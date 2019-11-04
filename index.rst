@@ -175,6 +175,11 @@ perform with chronograf. Probably the two most useful tabs are ``Dashboards`` an
 gathers important information about the subsystems. The "Summary state monitor" is a good
 example of general information one would be interested in during an observing night.
 
+.. important::
+    The chronograf dashboards are shared between all users. If you feel like you need
+    to make any change to the already existing dashboards, make sure to create a copy
+    of the one you plan on editing and change that one instead.
+
 The ``Explore`` tab let users perform free hand queries to the database using a sql-like
 language.
 
@@ -745,6 +750,56 @@ restarting the process. This can be summarized as follows;
     python liveview_server.py
 
 Once the live view server is running you can detach from the container by doing ``Crtl+p Crtl+q``.
+
+.. _build-idl:
+
+Building CSC interfaces
+-----------------------
+
+To communicate with a CSC, we use a class provided by ``salobj`` called ``Remote``.
+As you can see on previous sessions, the ``Remote`` receives the name of the CSC as
+an argument, which ultimately, specifies the interface to load.
+
+In order for the ``Remote`` to load this interface it needs to have the set of
+idl libraries available. In some cases, the interface for the CSC that you plan
+on communicating may no be readily available on the Jupyter notebook server. If
+this is the case you will see an exception like the following when trying to
+create the ``Remote``.
+
+::
+
+    ---------------------------------------------------------------------------
+    RuntimeError                              Traceback (most recent call last)
+    <ipython-input-2-470a83f93eee> in <module>
+    ----> 1 r = salobj.Remote(salobj.Domain(), "Component")
+
+    ~/repos/ts_salobj/python/lsst/ts/salobj/remote.py in __init__(self, domain, name, index, readonly, include, exclude, evt_max_history, tel_max_history, start)
+        137             raise TypeError(f"domain {domain!r} must be an lsst.ts.salobj.Domain")
+        138
+    --> 139         salinfo = SalInfo(domain=domain, name=name, index=index)
+        140         self.salinfo = salinfo
+        141
+
+    ~/repos/ts_salobj/python/lsst/ts/salobj/sal_info.py in __init__(self, domain, name, index)
+        152         self.idl_loc = domain.idl_dir / f"sal_revCoded_{self.name}.idl"
+        153         if not self.idl_loc.is_file():
+    --> 154             raise RuntimeError(f"Cannot find IDL file {self.idl_loc} for name={self.name!r}")
+        155         self.parse_idl()
+        156         self.ackcmd_type = ddsutil.get_dds_classes_from_idl(self.idl_loc, f"{self.name}::ackcmd")
+
+    RuntimeError: Cannot find IDL file /home/saluser/repos/ts_idl/idl/sal_revCoded_Component.idl for name='Component'
+
+But, instead of ``Component`` it will be the name of the CSC you tried to connect to.
+To resolve this issue, you will need to build the libraries. You can do that by putting the
+following commands on a notebook cell:
+
+::
+
+    %%script bash
+    make_idl_files.py <Component>
+
+Again, you will need to replace ``<Component>`` by the name of the CSC.
+
 
 .. Add content here.
 .. Do not include the document title (it's automatically added from metadata.yaml).
