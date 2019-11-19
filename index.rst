@@ -811,6 +811,9 @@ This section explains advanced procedures which may be required, specifically du
 
 .. _estop_reset:
 
+E-stop Reset Procedure
+----------------------
+
 If an E-stop has been activated (or possibly an L3 limit switch hit) then the following procedure must be followed to free the system. i
 
 #. Remove the issue that caused the E-stop to be activated. 
@@ -822,9 +825,16 @@ If an E-stop has been activated (or possibly an L3 limit switch hit) then the fo
 
 If this is done correctly, all three LEDs on the Pilz devices in both cabinets should be brightly illuminated, as seen in the following image. If only the main cabinet is depressed, then only the top light is bright. If only the dome cabinet is pressed, the top and bottom lights are bright.
 
+.. figure:: 
+   _static/Pilz_Estop_reset_complete.jpg
+   :scale: 25 %
+   :alt: Image of Pilz controller with E-stop cleared
+
+   The Pilz controller in the Telescope Cabinet. All three lights illuminated means the E-stops are properly deactivated.
+
 Note that if both E-stops are never activated simultaneously then the system will not reset.
 
-..note ::
+.. note::
         In the early days when the dome slipring was having issues, there was a connection to the pilz device that monitored azimuth power. It is possible that the azimuth power must still be applied to release the E-stop 
 
 .. _hexapod_connection_reset:
