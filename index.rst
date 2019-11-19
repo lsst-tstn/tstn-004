@@ -801,6 +801,43 @@ following commands on a notebook cell:
 Again, you will need to replace ``<Component>`` by the name of the CSC.
 
 
+.. _advanced_ops:
+
+Advanced Operations Procedures
+==============================
+
+This section explains advanced procedures which may be required, specifically during commissioning or during servicing. 
+
+
+.. _estop_reset:
+
+If an E-stop has been activated (or possibly an L3 limit switch hit) then the following procedure must be followed to free the system. i
+
+#. Remove the issue that caused the E-stop to be activated. 
+#. Activate both E-stops, the one on the telescope control cabinet, and the one on the dome control cabinet. Both will glow red.
+#. Release dome E-stop by turning clockwise a quarter turn or so
+#. Release main cabinet E-stop in the same manner
+#. Press the blue start button on the dome cabinet
+#. Press the blue start putton on the telescope control cabinet
+
+If this is done correctly, all three LEDs on the Pilz devices in both cabinets should be brightly illuminated, as seen in the following image. If only the main cabinet is depressed, then only the top light is bright. If only the dome cabinet is pressed, the top and bottom lights are bright.
+
+Note that if both E-stops are never activated simultaneously then the system will not reset.
+
+..note ::
+        In the early days when the dome slipring was having issues, there was a connection to the pilz device that monitored azimuth power. It is possible that the azimuth power must still be applied to release the E-stop 
+
+.. _hexapod_connection_reset:
+
+
+.. _atmcs_gui:
+
+.. _mitutoyo_connections:
+
+.. _Copley_Controller_connections:
+
+.. _telescope_cabinet_pdu:
+
 .. Add content here.
 .. Do not include the document title (it's automatically added from metadata.yaml).
 
