@@ -835,18 +835,69 @@ If this is done correctly, all three LEDs on the Pilz devices in both cabinets s
 Note that if both E-stops are never activated simultaneously then the system will not reset.
 
 .. note::
-        In the early days when the dome slipring was having issues, there was a connection to the pilz device that monitored azimuth power. It is possible that the azimuth power must still be applied to release the E-stop 
-
-.. _hexapod_connection_reset:
-
+        All L3 limit switches and E-stops are run through the smart relay system. This means that if an L3 limit (which is a hardstop at the extreme end of travel of the elevation, azimuth, M3 rotator and nasmyth axes) is contacted, then it will look as if an E-stop was pressed. To identify which L3 limit was hit, one must examine the interface of the smart relay. Any active signal will not have a filled box around the central number. The central number is then mapped to a L3 using the Auxiliary Telescope Electrical Diagram (Document-26731)
 
 .. _atmcs_gui:
 
-.. _mitutoyo_connections:
+Viewing the ATMCS LabVIEW GUI
+------------------------------
 
-.. _Copley_Controller_connections:
+This is the GUI developed by Rolando Cantarutti and Omar Estay to display and interact with the telescope mount at a low-level (directly from the cRIO with no SAL communication). This is not meant to be used for regular operations.
+
+Connections can currently be accomplished in two ways, the first uses a VNC connection to a windows machine currently located in the AuxTel building. The second is to login remotely using the LabVIEW Connector (requires Internet Explorer and a specific driver).
+
+#. Open an ssh tunnel to the ATMCS windows machine.
+   
+   .. code-block:: bash
+        
+	ssh -L 5900:192.168.1.49:5900 saluser@139.229.162.118
+
+#. Using RealVNC (which is required due to encryption although other clients might work) you can then connect to 'localhost' on port 5900
+#. Enter credentials (ask Patrick or Tiago)
+#. If the GUI is not already open, then open internet explorer and enter the following address in the address bar.
+   
+   .. code-block:: python 
+        
+	http://192.168.1.47:8000/atmcs.html
+
+One can also install the `LabVIEW remote panel <http://ftp.ni.com/support/softlib/labview/labview_runtime/2010/2010Sp1%20Linux%20Temp/labview-2010-rte-10.0.1-1.i386.zip>`_ on their Windows machine (Internet Explorer only) then open a tunnel to the above IP on port 8000. This requires the download from NI, then you'll have to open the tunnel using PuTTy (or equivalent). Details will be included in the ATMCS documention upon delivery. We don't recommend this method unless absolutely necessary.
+
+.. _hexapod_connection_reset:
+
+Resetting the ATHexapod IP Connection
+-------------------------------------
+
+For reasons which are under investigation, occasionally after a power cycle (we think) the hexapod TCP/IP connection goes down. To reset it, one must connect a serial port to the device, establish a connection using the (windows) PIMikroMove software, close the connection, then power cycle the controller. Power cycling can be done remotely (:ref:`using the switched PDU <telescope_cabinet_pdu>`). Until this problem is resolved, we've left a permanent serial (RS-232) connection to a local windows machine.
+
+Follow these steps to re-establish TCP/IP connection:
+
+#. Establish VNC connection :ref:`which is the same as the ATMCS GUI VNC shown here <atmcs_gui>`.
+#. Open PIMikroMove software from start menu
+#. Open new connection and select C-887 controller, and click connect
+#. Close connection
+#. Power cycle controller (which will cause the hexapod to lose the reference position)
+#. Put hexapod CSC in enabled state (which will send the hexapod to the reference position)
+#. Move hexapod to desired position
+
+
+
+.. _mitutoyo_and_copley_connections:
+
+Mitutoyo Micrometers and Copley Controller Connections
+-------------------------------------------------------
+The mitutoyo devices (when connected) are currently controlled through the Copley PC (located in the bottom of the telescope cabinet). Connection to this Windows machine uses TeamViewer. Contact Patrick for credentials.
+
+More details to follow.
 
 .. _telescope_cabinet_pdu:
+
+Telescope Cabinet Switchable PDU
+--------------------------------
+
+In the event that a controller in the cabinet needs power cycling remotely, this may be done by logging into the switchable PDU mounted in the cabinet. The IP and connection info can be found `here <https://confluence.lsstcorp.org/x/qw6SBg>`_
+
+* Channel 1 is connected to the main 24V supply. This will power off the cRIO (and possibly the Copley controllers, Pilz Device, and Smart Relay).
+* Channel 2 is connected to powerbar in bottom of cabinet, which has the 220V connection to the mount (which powers the Embedded PC for the Collimation Camera) as well as the hexapod connected to it.
 
 .. Add content here.
 .. Do not include the document title (it's automatically added from metadata.yaml).
