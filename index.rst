@@ -718,11 +718,7 @@ In some situations the ATMCS will go to ``FAULT`` state and it will reject the `
 preventing to recover the system. We have been working on tracking this issue down but,
 should you encounter this issue it is possible to recover by pressing the e-stop button on
 the main cabinet (close to the telescope pier) and on the dome cabinet (east building wall on lower
-level) and then executing the recover procedure.
-
-To recover from e-stop, release both e-stop buttons, press and hold the "start" button on the
-dome cabinet for five seconds, then press and hold the "start" button on the main cabinet for
-5s. This should clear the ``FAULT`` state and leave the ATMCS in ``STANDBY``.
+level) and then executing the :ref:`E-stop reset procedure <estop_reset>`. This should clear the ``FAULT`` state and leave the ATMCS in ``STANDBY``.
 
 
 .. _issue-liveview:
@@ -799,6 +795,122 @@ following commands on a notebook cell:
     make_idl_files.py <Component>
 
 Again, you will need to replace ``<Component>`` by the name of the CSC.
+
+
+.. _advanced_ops:
+
+Advanced Operations Procedures
+==============================
+
+This section explains advanced procedures which may be required, specifically during commissioning or during servicing. 
+
+
+.. _estop_reset:
+
+E-stop Reset Procedure
+----------------------
+
+If an E-stop has been activated (or possibly an L3 limit switch hit) then the following procedure must be followed to free the system. i
+
+#. Remove the issue that caused the E-stop to be activated. 
+#. Activate both E-stops, the one on the telescope control cabinet, and the one on the dome control cabinet. Both will glow red.
+#. Release dome E-stop by turning clockwise a quarter turn or so
+#. Release main cabinet E-stop in the same manner
+#. Press the blue start button on the dome cabinet
+#. Press the blue start putton on the telescope control cabinet
+
+If this is done correctly, all three LEDs on the Pilz devices in both cabinets should be brightly illuminated, as seen in the following image. If only the main cabinet is depressed, then only the top light is bright. If only the dome cabinet is pressed, the top and bottom lights are bright.
+
+.. figure:: 
+   _static/Pilz_Estop_reset_complete.jpg
+   :scale: 25 %
+   :alt: Image of Pilz controller with E-stop cleared
+
+   The Pilz controller in the Telescope Cabinet. All three lights illuminated means the E-stops are properly deactivated.
+
+Note that if both E-stops are never activated simultaneously then the system will not reset.
+
+.. note::
+        All L3 limit switches and E-stops are run through the smart relay system. This means that if an L3 limit (which is a hardstop at the extreme end of travel of the elevation, azimuth, M3 rotator and nasmyth axes) is contacted, then it will look as if an E-stop was pressed. To identify which L3 limit was hit, one must examine the interface of the smart relay. Any active signal will not have a filled box around the central number. The central number is then mapped to a L3 using the Auxiliary Telescope Electrical Diagram (Document-26731)
+
+.. _atmcs_gui:
+
+Viewing the ATMCS LabVIEW GUI
+------------------------------
+
+This is the GUI developed by Rolando Cantarutti and Omar Estay to display and interact with the telescope mount at a low-level (directly from the cRIO with no SAL communication). This is not meant to be used for regular operations.
+
+Connections can currently be accomplished in two ways, the first uses a VNC connection to a windows machine currently located in the AuxTel building. The second is to login remotely using the LabVIEW Connector (requires Internet Explorer and a specific driver).
+
+#. Open an ssh tunnel to the ATMCS windows machine.
+   
+   .. code-block:: bash
+        
+	ssh -L 5900:192.168.1.49:5900 saluser@139.229.162.118
+
+#. Using RealVNC (which is required due to encryption although other clients might work) you can then connect to 'localhost' on port 5900
+#. Enter credentials (ask Patrick or Tiago)
+#. If the GUI is not already open, then open internet explorer and enter the following address in the address bar.
+   
+   .. code-block:: python 
+        
+	http://192.168.1.47:8000/atmcs.html
+
+One can also install the `LabVIEW remote panel <http://ftp.ni.com/support/softlib/labview/labview_runtime/2010/2010Sp1%20Linux%20Temp/labview-2010-rte-10.0.1-1.i386.zip>`_ on their Windows machine (Internet Explorer only) then open a tunnel to the above IP on port 8000. This requires the download from NI, then you'll have to open the tunnel using PuTTy (or equivalent). Details will be included in the ATMCS documention upon delivery. We don't recommend this method unless absolutely necessary.
+
+.. _hexapod_connection_reset:
+
+Resetting the ATHexapod IP Connection
+-------------------------------------
+
+For reasons which are under investigation, occasionally after a power cycle (we think) the hexapod TCP/IP connection goes down. To reset it, one must connect a serial port to the device, establish a connection using the (windows) PIMikroMove software, close the connection, then power cycle the controller. Power cycling can be done remotely (:ref:`using the switched PDU <telescope_cabinet_pdu>`). Until this problem is resolved, we've left a permanent serial (RS-232) connection to a local windows machine.
+
+Follow these steps to re-establish TCP/IP connection:
+
+#. Establish VNC connection :ref:`which is the same as the ATMCS GUI VNC shown here <atmcs_gui>`.
+#. Open PIMikroMove software from start menu
+#. Open new connection and select C-887 controller, and click connect
+#. Close connection
+#. Power cycle controller (which will cause the hexapod to lose the reference position)
+#. Put hexapod CSC in enabled state (which will send the hexapod to the reference position)
+#. Move hexapod to desired position
+
+
+
+.. _mitutoyo_and_copley_connections:
+
+Mitutoyo Micrometers and Copley Controller Connections
+-------------------------------------------------------
+The mitutoyo devices (when connected) are currently controlled through the Copley PC (located in the bottom of the telescope cabinet). Connection to this Windows machine uses TeamViewer. Contact Patrick for credentials.
+
+More details to follow.
+
+.. _telescope_cabinet_pdu:
+
+Telescope Cabinet Switchable PDU
+--------------------------------
+
+In the event that a controller in the cabinet needs power cycling remotely, this may be done by logging into the switchable PDU mounted in the cabinet. The IP and connection info can be found `here <https://confluence.lsstcorp.org/x/qw6SBg>`_
+
+* Channel 1 is connected to the main 24V supply. This will power off the cRIO (and possibly the Copley controllers, Pilz Device, and Smart Relay).
+* Channel 2 is connected to powerbar in bottom of cabinet, which has the 220V connection to the mount (which powers the Embedded PC for the Collimation Camera) as well as the hexapod connected to it.
+
+
+
+
+.. _atdome_communication_loss:
+
+AT Dome Communication Loss
+--------------------------
+If during operation the dome controllers lose connection, which is seen either from the software, or the push-buttons fail to work, then this procedure must be followed. The dome has two types of communication failsures
+
+* The two cRIOs lose communication with each other (notably the cRIO in the rotating part of the enclosure loses connection with the bottom box and may be blocking the connection). If the CSC is connected and in disabled or enabled state, then this will be shown in the `scbLink` event (must verify). Also, this can be seen in the Main Box Dome Control LabVIEW Remote on the ATMCS machine as the `TopComms` light in the bottom left corner.
+
+  * Press the reset button on the cRIO inside the electrical cabinet on the rotating part of the dome (near the lower shutter) to resolve this issue
+
+* The Main cRIO (located in the dome electrical cabinet on the first floor) is not correctly releasing the TCP/IP connection. This can be observed by being able to ping the box but not open a telnet connection (port 17310). Also, the HostComms light will be illuminated in the Main Box Dome Control LabVIEW remote.
+ 
+  * Press the reset button on the cRIO in the dome cabinet on the first floor to resolve this issue 
 
 
 .. Add content here.
