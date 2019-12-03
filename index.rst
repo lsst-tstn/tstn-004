@@ -718,11 +718,7 @@ In some situations the ATMCS will go to ``FAULT`` state and it will reject the `
 preventing to recover the system. We have been working on tracking this issue down but,
 should you encounter this issue it is possible to recover by pressing the e-stop button on
 the main cabinet (close to the telescope pier) and on the dome cabinet (east building wall on lower
-level) and then executing the recover procedure.
-
-To recover from e-stop, release both e-stop buttons, press and hold the "start" button on the
-dome cabinet for five seconds, then press and hold the "start" button on the main cabinet for
-5s. This should clear the ``FAULT`` state and leave the ATMCS in ``STANDBY``.
+level) and then executing the :ref:`E-stop reset procedure <estop_reset>`. This should clear the ``FAULT`` state and leave the ATMCS in ``STANDBY``.
 
 
 .. _issue-liveview:
@@ -898,6 +894,24 @@ In the event that a controller in the cabinet needs power cycling remotely, this
 
 * Channel 1 is connected to the main 24V supply. This will power off the cRIO (and possibly the Copley controllers, Pilz Device, and Smart Relay).
 * Channel 2 is connected to powerbar in bottom of cabinet, which has the 220V connection to the mount (which powers the Embedded PC for the Collimation Camera) as well as the hexapod connected to it.
+
+
+
+
+.. _atdome_communication_loss:
+
+AT Dome Communication Loss
+--------------------------
+If during operation the dome controllers lose connection, which is seen either from the software, or the push-buttons fail to work, then this procedure must be followed. The dome has two types of communication failsures
+
+* The two cRIOs lose communication with each other (notably the cRIO in the rotating part of the enclosure loses connection with the bottom box and may be blocking the connection). If the CSC is connected and in disabled or enabled state, then this will be shown in the `scbLink` event (must verify). Also, this can be seen in the Main Box Dome Control LabVIEW Remote on the ATMCS machine as the `TopComms` light in the bottom left corner.
+
+  * Press the reset button on the cRIO inside the electrical cabinet on the rotating part of the dome (near the lower shutter) to resolve this issue
+
+* The Main cRIO (located in the dome electrical cabinet on the first floor) is not correctly releasing the TCP/IP connection. This can be observed by being able to ping the box but not open a telnet connection (port 17310). Also, the HostComms light will be illuminated in the Main Box Dome Control LabVIEW remote.
+ 
+  * Press the reset button on the cRIO in the dome cabinet on the first floor to resolve this issue 
+
 
 .. Add content here.
 .. Do not include the document title (it's automatically added from metadata.yaml).
