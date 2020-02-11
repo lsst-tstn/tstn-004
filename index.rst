@@ -8,11 +8,11 @@
 
 .. note::
 
-   This document describes the procedures for observing with the auxiliary telescope in the early
-   stages of system integration and commission. The procedures are likely to change very rapidly in
-   these stages so it is recommended that users keep a close eye on the document before doing any
-   observations. Here we will also document some troubleshooting to commonly found issues. In case
-   of questions contact the document authors.
+   This document describes general procedures to conduct manual observations with
+   the Rubin Observatory Auxiliary Telescope. These procedures are influx and will evolve
+   over time as the system matures, therefore it is highly recommended that users keep a
+   close look on this document before doing any observations. Here we will also document
+   troubleshooting to commonly found issues. In case of questions contact the document authors.
 
 Introduction
 ============
@@ -45,107 +45,14 @@ Network architecture and connectivity
 =====================================
 
 From the user perspective, the summit network can broken down into two main systems; the campus
-and the control network. Regardless if you are at the summit, the base or in Tucson if you are
-connected to the LSST network (e.g. LSST-WAP) you will have access to the summit network. The
-control network on the other side is only accessible from bastion computers on the summit. These
-bastions are connected to both the campus network and the control network, thus giving users
-access to the control network through :ref:`ssh tunneling <ssh-rules>`.
-
-  .. attention::
-     An important aspect of the control network is that it **does not** have access to the internet.
-     This does create some issues, for instance, to update software on computers connected solely to
-     the control network on the fly.
+and the control network. In principle, if you are at the summit, the base or in Tucson, if you are
+connected to the LSST network (e.g. LSST-WAP) you will have access to the summit network and the
+control network. IT managed to overlay both networks so that there is no need to use bastion
+hosts to access systems on the control network from LSST network. This considerably simplify
+user access to resources avoiding the need for ssh tunnels.
 
 A list of the host computers IP address can be found
 `here <https://confluence.lsstcorp.org/x/qw6SBg>`_.
-
-.. _ssh-rules:
-
-Useful ssh Tunneling rules
---------------------------
-
-Paste the following rules to :file:`~/.ssh/config` on the computer you plan on using for the
-observations.
-
-This rule will enable access to a :ref:`jupyter notebook server <jupyter>`. Currently each user is
-given a jupyter server running on a separate docker container. Each container has it's own IP
-address on the control network and each user receive it's own token to access the server. In the
-future we will use DM LSP system. Instructions will be updated accordingly.
-
-.. code-block:: basic
-   :name: chile-jupyter
-
-     Host chile-jupyter
-          Hostname 139.229.162.118
-          User <username>
-          LocalForward 8885 192.168.1.2??:8885
-
-This rule will enable connection to the GenericCamera :ref:`live view server <liveview>`.
-
-.. code-block:: basic
-   :name: chile-liveview
-
-     Host chile-liveview
-          Hostname 139.229.162.118
-          User <username>
-          LocalForward 8881 192.168.1.218:8888
-
-This rule is to enabled ``wget`` on GenericCamera to download :ref:`fits images <take-image>`.
-
-  .. warning::
-     This will be deprecated once proper LFA handling is implemented.
-
-.. code-block:: basic
-   :name: chile-wget
-
-     Host chile-wget
-          Hostname 139.229.162.118
-          User <username>
-          LocalForward 8001 192.168.1.216:8000
-
-This rule is to connect to the machine that hosts the liveview server (see :ref:`issue-liveview`).
-
-.. code-block:: basic
-   :name: liveview-host
-
-     Host liveview-host
-          Hostname 139.229.162.114
-          User <username>
-
-
-Once the rule is appended to :file:`~/.ssh/config` it should be possible to just entry
-``ssh <Host>``. The user will enter the bastion machine specified in the ``Hostname`` entry
-on the rule and the tunnel specified on ``LocalForward`` will be set and the service will
-be available on the user ``localhost:<local-port>``. The format of the ``LocalForward`` parameter
-is ``<local-port> <remote-host>:<remote-port>``. Feel free to change ``<local-port>`` to any
-suitable range on the machine used for the observations.
-
-It is also possible to send the ssh command to
-the background while tunneling by adding the options ``-N -f``.
-
-To log in to the notebook server;
-
-.. prompt:: bash
-
-   ssh -N -f chile-jupyter
-
-and open the address ``localhost:8885`` on a browser.
-
-To open the liveview;
-
-.. prompt:: bash
-
-   ssh -N -f chile-liveview
-
-and open the address ``localhost:8881`` on a browser.
-
-To download fits images taken with the Generic Camera;
-
-.. prompt:: bash
-
-   ssh -N -f chile-wget
-   wget http://localhost:8001/<image_name>
-
 
 .. _tools:
 
@@ -163,11 +70,11 @@ Engineering and Facility Database (EFD)
 
 The EFD is responsible for listening to and storing all data (Telemetry, Event, Commands and
 Acknowledgements) sent by components and users interacting with the components. The most recent
-incarnation of the EFD uses an influx database to store the data in a time-series database.
+incarnation of the EFD uses influxDB to store the data in a time-series database.
 See `sqr-034 <https://sqr-034.lsst.io>`_ for details about the EFD implementation.
 
 Data from the summit is available on chronograf and can be accessed at
-`<http://summit-chronograf-efd.lsst.codes/>`_.
+`<https://chronograf-summit-efd.lsst.codes/>`_.
 
 On the left hand side of the web page there is a tab with links to the different actions one can
 perform with chronograf. Probably the two most useful tabs are ``Dashboards`` and
@@ -182,6 +89,9 @@ example of general information one would be interested in during an observing ni
 
 The ``Explore`` tab let users perform free hand queries to the database using a sql-like
 language.
+
+In addition to the chronograf interface, users can also query for EFD data from Python using
+the `efd-client <https://efd-client.lsst.io>`_ library.
 
 .. _jupyter:
 
@@ -206,36 +116,62 @@ The current system deployment uses individual Jupyter Lab servers for each user 
 individual docker containers. In the nearby future, the plan is to start using DM LSP
 (:cite:`LDM-542`) environment to manage user servers and environment.
 
-The first step to access a Jupyter Lab server is to tunnel using the IP and token information
-provided for each user by the Telescope & Site team point of contact. Once the ssh tunnel is
-up it should be possible to open a web page on ``localhost:<local-port>``. After entering
-the provided token, you should see the :ref:`Jupyter Lab interface <fig-jupyter-interface>`.
+Each user receives an web address and token for an individual notebook server. With that
+information it is a matter of opening the address on a browser and entering the token
+in the login page. Once the logged in, the user should see the
+:ref:`jupyter lab interface <fig-jupyter-interface>`.
 
 .. figure:: /_static/jupyter_interface.jpg
    :name: fig-jupyter-interface
    :target: ../_images/jupyter_interface.jpg
    :alt: Jupyter interface
 
-In the left hand there is a file browser navigation screen which, by default, have two directories;
-:file:`develop` and :file:`repos`. The :file:`develop` directory is a bind mount on the server that
+In the left hand there is a file browser navigation screen which, by default, have three directories;
+:file:`develop`, :file:`repos` and :file:`shared`. The :file:`develop` directory is a bind mount on
+the server that
 runs the Jupyter Lab containers. Inside there is a repository for notebooks
 (:file:`develop/ts_notebooks`) with examples and work notebooks from other users (separated by
 username). Feel free to browse and edit any notebook within this repo. Be sure to commit and push
 any work you may have done and eventually make Pull Request to the original repo so other users can
 see and use work that was done.
 
+While each user has their only :file:`develop` space, the containers have a shared mount space
+visible to all users, :file:`shared`. Filed placed or edited here by a user in their jupyter server
+will be available/modified to all the other users.
+
 The :file:`repos` directory, on the other hand, contains some basic repos that ships with the
-container with the T&S software used to power the control system. Any data in this directory,
+notebook server containing the T&S software used to power the control system. Any data in
+this directory,
 or in the home folder, will be lost if the container is restarted. It is advisable to only keep
 important data inside the user designated folder (e.g. :file:`develop`).
+
+It is also possible to access data taken with the LATISS instrument in the notebook server.
+The data is immediately available in a butler instance in
+:file:`/mnt/dmcs/oods_butler_repo/repo/`. This mount point is read-only by all users but
+inside that there are a couple of shared mount places for users to save calibration
+and reduced data (:file:`/mnt/dmcs/oods_butler_repo/repo/CALIB` and
+:file:`/mnt/dmcs/oods_butler_repo/repo/rerun`).
 
 .. _love:
 
 LSST Operations and Visualization Environment (LOVE)
 ----------------------------------------------------
 
-.. note::
-    TBD
+The LOVE interface is available at the summit on the following address;
+`<http://amor01.cp.lsst.org>`_. In general, the interface will be visible in the
+observing room at the Summit and in Tucson. The current list of available views
+is influx, an example is shown bellow.
+
+.. figure:: /_static/love-1.jpg
+   :name: fig-love-1
+   :target: ../_images/love-1.jpg
+   :alt: LOVE home web page with links to available views.
+
+.. image:: /_static/love-2.jpg
+   :name: fig-love-2
+   :target: ../_images/love-2.jpg
+   :scale: 50 %
+   :alt: LOVE summary state view.
 
 .. _queue:
 
@@ -258,27 +194,24 @@ responsible for capturing all SAL traffic, serialize it in avro an send it over 
 inserted on the influx database (see `sqr-034 <https://sqr-034.lsst.io>`_ for more information
 about the EFD).
 
-.. figure:: /_static/ATTCS.jpg
+.. figure:: /_static/ATTCS-2.jpg
    :name: fig-attcs
-   :target: ../_images/ATTCS.jpg
+   :target: ../_images/ATTCS-2.jpg
    :alt: AuxTel components
 
+
+These components are grouped into high-level components that, although independent,
+work together logically. In the case of AT, these are the Auxiliary Telescope -
+Telescope Control System (ATTCS) and the LSST Auxiliary Telescope Image and
+Slit less Spectrograph (LATISS).
 
 .. _ops:
 
 Basic Operations Procedures
 ===========================
 
-This section explains how one can perform the basic operations with the telescope using the
-Jupyter Lab server. Here we assume you was able to login to the server assigned to you and
-either open an existing notebook or create an empty one to work with.
-
-.. important::
-    You will noticed that most of the tasks shown here will have two ways of being performed,
-    using the high level software and low level software. At the time of this writing the
-    low level controls, where the user sends commands to individual CSCs and have little
-    feed back, are the only ones tested on sky. The high level operations, as one can see,
-    provides a much easier way to execute these operations, but have not been sanctioned yet.
+This section explains how one can perform basic operations with the telescope using the
+Jupyter Lab server.
 
 .. note::
     Notebooks with the procedures can be found on the :file:`develop/ts_notebooks/examples`
@@ -291,105 +224,100 @@ Startup procedure
 
 At the end of the day, before observations starts, most CSCs will be unconfigured and
 in ``STANDBY`` state. The first step in starting up the system is to enable all CSCs.
-Putting a CSC in the ``ENABLED`` state required the transition from ``STANDBY`` to
+Putting a CSC in the ``ENABLED`` state requires the transition from ``STANDBY`` to
 ``DISABLED`` and then from ``DISABLED`` to ``ENABLED``. When transitioning from
 ``STANDBY`` to ``DISABLED`` it is possible to provide a ``settingsToApply`` that selects
 a configuration for the CSC. Some CSCs won't need any settings while others will.
 It is possible to check what are the available settings by looking at the ``settingVersions``
-event.
+event. Alternatively, it is also possible to let the high level control scripts to
+decide which configuration to use. In most cases, when performing regular operations,
+the auto-selection algorithm should be used.
 
-After all CSCs are in the ``ENABLED`` state, we proceed to open the dome slit, setup the
-ATPneumatics and startup the ATAOS. After the dome has finished opening, the telescope
-covers are opened and the procedure is complete.
-
-.. note::
-    In some cases, if the dome controller is restarted, the dome will need to be homed. At the time
-    of this writing there is no fixture that allow the procedure to be executed without human
-    intervention. The process is documented in :ref:`issues`.
-
-The startup procedure is encapsulated in the task ``startup()`` from the ``ATTCS`` class provided
-by ``ts_standardscript``, which is available in the Jupyter server. The high level operation can be
-run by doing the following:
+To get started with it, make sure to open jupyter lab, navigate to the
+`~/develop/ts_notebooks/` folder nad create a directory with your username in that
+repository (e.g. `tribeiro` or `pingraham`). Then, navigate inside the newly
+created directory and create sub-directories as you see fit to keep the notebooks
+organized. Once you are happy with the location you selected for the nights operation
+start a clean notebook and enter the following to import the basic libraries.
 
 ::
 
-    from lsst.ts.standardscripts.auxtel.attcs import ATTCS
-
-    attcs = ATTCS()
-    await attcs.start_task
-    settings = {"atdome": "test.yaml":, "ataos" : "measured_20190908.yaml", "athexapod": "Default1"}
-    await attcs.startup(settings)
-
-Although this procedure implements all the basic steps and checks, it has not been tested at the
-telescope yet. For now the sanctioned procedure is to execute this series of commands on a jupyter
-notebooks. This is ta
-
-::
+    import asyncio
 
     from lsst.ts import salobj
 
-Setup remotes for all the AT components
+    from lsst.ts.standardscripts.auxtel.attcs import ATTCS
+    from lsst.ts.standardscripts.auxtel.latiss import LATISS
+
+In the above, ``salobj`` is the high-level library that we use for basic
+communication on component base. The following classes, ``ATTCS`` and ``LATISS``
+are developed using ``salobj`` to enable high-level operations combining multiple
+components. The components involved in each of these high level classes are depicted
+in :ref:`the component diagram <fig-attcs>` above.
+
+It is possible now to use those classes to operate with the components. To enable
+them run;
 
 ::
 
-    d = salobj.Domain()
+    domain = salobj.Domain()
+    attcs = ATTCS(domain)
+    latiss = LATISS(domain)
+
+    await asyncio.gather(attcs.start_task, latiss.start_task)
+
+    await attcs.enable()
+
+    await latiss.enable()
+
+In case you want to enable the components with custom settings, it is possible to
+pass them as a dictionary, e.g.;
 
 ::
 
-    atmcs = salobj.Remote(d, "ATMCS")
-    atptg = salobj.Remote(d, "ATPtg")
-    ataos = salobj.Remote(d, "ATAOS")
-    atpne = salobj.Remote(d, "ATPneumatics")
-    athex = salobj.Remote(d, "ATHexapod")
-    atdome = salobj.Remote(d, "ATDome", index=1)
-    atdomtraj = salobj.Remote(d, "ATDomeTrajectory")
+    await attcs.enable(settings={
+                    'ataos': "current",
+                    'atmcs': "",
+                    'atptg': "",
+                    'atpneumatics': "",
+                    'athexapod': "current",
+                    'atdome': "test.yaml",
+                    'atdometrajectory': ""})
+
+To prepare for the afternoon calibrations, run the high-level task.
 
 ::
 
-    await asyncio.gather(atmcs.start_task,
-                         atptg.start_task,
-                         ataos.start_task,
-                         atpne.start_task,
-                         athex.start_task,
-                         atdome.start_task,
-                         atdomtraj.start_task)
+    await attcs.prepare_for_flatfield()
 
-Enable all components.
+This method will position the dome and telescope to the appropriate position for taking
+flat field data, open the mirror covers and all set up all other components to their
+correct state. The ``LATISS`` class then offers high level tasks to acquire calibration
+data.
 
 ::
 
-    await asyncio.gather(salobj.set_summary_state(atmcs, salobj.State.ENABLED, timeout=120),
-                         salobj.set_summary_state(atptg, salobj.State.ENABLED),
-                         salobj.set_summary_state(ataos, salobj.State.ENABLED, settingsToApply="measured_20190908.yaml"),
-                         salobj.set_summary_state(atpne, salobj.State.ENABLED),
-                         salobj.set_summary_state(athex, salobj.State.ENABLED, settingsToApply="Default1"),
-                         salobj.set_summary_state(atdome, salobj.State.ENABLED, settingsToApply="test.yaml"),
-                         salobj.set_summary_state(atdomtraj, salobj.State.ENABLED))
+    bias_data_id_list = await latiss.take_bias(nbias=10)
 
-Open dome shutter
+    dark_data_id_list = await latiss.take_darks(exptime=100., ndarks=10)
 
-::
+    flat_data_id_list = await latiss.take_flats(exptime=5., nflats=10,
+                                                filter='blank_bk7_wg05',
+                                                grating='ronchi90lpmm')
 
-    await atdome.cmd_moveShutterMainDoor.set_start(open=True)
+Each method will return a list of `data_id` that allows users to access the
+data on a butler instance. We will give more details :ref:`furthermore <latiss>`.
 
-Wait until the dome in fully open, then execute the next step to open the telescope
-cover
+Once the calibrations are done and you are ready to open the telescope for the night,
+you can run;
 
 ::
 
-    await atpne.cmd_openM1Cover.start()
+    await attcs.startup()
 
-Finally, enable the ATAOS correction for the M1 pressure.
-
-::
-
-    await ataos.cmd_enableCorrection.set_start(m1=True)
-
-If the dome needs to be homed then run the following command:
-
-::
-
-    await atdome.cmd_homeAzimuth.start()
+It is safe to run this method with the telescope in most states. The task
+will make sure to verify that all CSCs are in their proper state, will close the mirror
+covers before opening the dome and then proceed to open the dome and so on.
 
 .. _pointing:
 
@@ -424,7 +352,7 @@ Initializing ``ATTCS`` class.
 
 Run the slew task. This task will only finish when the telescope and the dome are
 positioned. Also, this will set the sky position angle (angle between y-axis and North) to
-be zero (or 180. if zero is not achievable). It is posssible to user RA/Dec and rotator
+be zero (or 180. if zero is not achievable). It is possible to use RA/Dec and rotator
 as hexagesimal strings or floats (and mix and match them). For instance,
 
 ::
@@ -446,148 +374,84 @@ requested time, which will change as the telescope track the object.
 
     await attcs.slew_icrs(ra="20:25:38.85705", dec="-56:44:06.3230", rot_pos=0., target_name="Alf Pav")
 
-As with the :ref:`startup` procedure, this task has not been tested at the telescope yet.
-For now the sanctioned procedure is to execute the slew and track by commanding the pointing
-component individually. This also means the user have to handle the rotator angle
-computations. In this mode we only support setting the rotator position to a certain angle.
-Due to some binding issues we have been trying to keep the rotator as close to zero as possible.
+Note that this task still experience some undesired behaviour, like hanging in until it times out
+or returning before the end of a slew. These issues are mainly due to issues with the `ATMCS`
+either because it still fails to comply with our system architecture (like sending events in
+specific order) or due to issues with the internal control algorithms.
+
+The `ATTCS` class provides a couple different ways to execute offsets with the telescope; offsets
+in Az/El, RA/Dec and xy. These can be done with the following calls, respectively
+(all values are in `arcsec`);
 
 ::
 
-    import logging
-    import yaml
+    await attcs.offset_azel(az=100., el=100.)
 
-    import numpy as np
-    from matplotlib import pyplot as plt
-    import astropy.units as u
-    from astropy.time import Time
-    from astropy.coordinates import AltAz, ICRS, EarthLocation, Angle, FK5
-    import asyncio
+    await attcs.offset_radec(az=100., el=100.)
 
-    from lsst.ts import salobj
+    await attcs.offset_xy(az=100., el=100.)
 
-    from lsst.ts.idl.enums import ATPtg
+The offsets are not cumulative meaning, if you execute the same command more than once, you
+get the same offset, e.g.;
 
 ::
 
-    from astropy.utils import iers
-    iers.conf.auto_download = False
+    await attcs.offset_azel(az=100., el=100.)
+    await attcs.offset_azel(az=100., el=100.)
+
+is equivalent to
 
 ::
 
-    d = salobj.Domain()
+    await attcs.offset_azel(az=100., el=100.)
+
+.. _latiss:
+
+Using the LSST Auxiliary Telescope Image and Slit less Spectrograph (LATISS)
+----------------------------------------------------------------------------
+
+Similarly to `ATTCS`, the `LATISS` class allow users to interact with the
+instrument in a seamless way, without the need to worry about most of the
+multiple components that form the instrument. It also makes an effort to
+facilitate data acquisition so users don't have to worry about some
+details required by the system (like setting of specific values in commands).
+
+We already went through the tasks available to acquire calibration data
+:ref:`above <startup>`. Let us now review the task to take object and
+engineering data and then how to access the data using the butler.
+
+As with the calibration tasks, one can use the `take_object` and `take_engtest`
+tasks to get object and engineering test data respectively. These tasks are
+similar to that of `take_flats` where the user can specify a filter and grating
+in addition to an exposure time and number of exposures, e.g.;
 
 ::
 
-    atmcs = salobj.Remote(d, "ATMCS")
-    atptg = salobj.Remote(d, "ATPtg")
-    ataos = salobj.Remote(d, "ATAOS")
-    atpne = salobj.Remote(d, "ATPneumatics")
-    athex = salobj.Remote(d, "ATHexapod")
-    atdome = salobj.Remote(d, "ATDome", index=1)
-    atdomtraj = salobj.Remote(d, "ATDomeTrajectory")
+    object_data_id_list = await latiss.take_object(exptime=5., n=10,
+                                                   filter="blank_bk7_wg05",
+                                                   grating="ronchi90lpmm",
+                                                   object="Alf Vel")
+
+    engtst_data_id_list = await latiss.take_engtest(exptime=5., n=10,
+                                                    filter="blank_bk7_wg05",
+                                                    grating="empty_1",
+                                                    object="Alf Vel - test")
+
+Again, the method will return a list of data ids that can be used to access
+the data on the butler.
 
 ::
 
-    await asyncio.gather(atmcs.start_task,
-                         atptg.start_task,
-                         ataos.start_task,
-                         atpne.start_task,
-                         athex.start_task,
-                         atdome.start_task,
-                         atdomtraj.start_task)
+    from lsst.ip.isr.isrTask import IsrTask
 
+    import lsst.daf.persistence as dafPersist
 
-The next cell sets the observatory location. This is needed to compute
-the Az/El of the target to set the camera rotation angle. We are trying
-to keep the angle close to zero.
+    dataPath = '/mnt/dmcs/oods_butler_repo/repo/'
+    butler = dafPersist.Butler(dataPath)
 
-::
+    data_ref = butler.dataRef('raw', **dict(visit=object_data_id_list[0]))
 
-    location = EarthLocation.from_geodetic(lon=-70.747698*u.deg,
-                                           lat=-30.244728*u.deg,
-                                           height=2663.0*u.m)
-
-This next cell defines a target.
-
-::
-
-    ra = Angle("20:25:38.85705", unit=u.hour)
-    dec = Angle("-56:44:06.3230", unit=u.deg)
-    target_name="Alf PAv"
-    radec = ICRS(ra, dec)
-
-This next cell will slew to the target and set the camera rotation angle
-to zero. Not that, unlike ``attcs.slew_icrs`` this call returns right away and does not
-provide any feedback of when the telescope and dome arrives at the requested position.
-
-::
-
-    # Figure out what is the rotPA that sets nasmith rotator close to zero.
-    time_data = await atptg.tel_timeAndDate.next(flush=True, timeout=2)
-    curr_time_atptg = Time(time_data.tai, format="mjd", scale="tai")
-    print(curr_time_atptg)
-    coord_frame_altaz = AltAz(location=location, obstime=curr_time_atptg)
-    alt_az = radec.transform_to(coord_frame_altaz)
-
-    await atptg.cmd_raDecTarget.set_start(
-        targetName=target_name,
-        targetInstance=ATPtg.TargetInstances.CURRENT,
-        frame=ATPtg.CoordFrame.ICRS,
-        epoch=2000,  # should be ignored: no parallax or proper motion
-        equinox=2000,  # should be ignored for ICRS
-        ra=radec.ra.hour,
-        declination=radec.dec.deg,
-        parallax=0,
-        pmRA=0,
-        pmDec=0,
-        rv=0,
-        dRA=0,
-        dDec=0,
-        rotPA=180.-alt_az.alt.deg,
-        rotFrame=ATPtg.RotFrame.FIXED,
-        rotMode=ATPtg.RotMode.FIELD,
-        timeout=10
-    )
-
-In case you need to stop tracking, use the next cell!
-
-::
-
-    await atptg.cmd_stopTracking.start(timeout=10)
-
-Use the next cell in case you need to offset to center the target on the
-FoV.
-
-This will set total offsets. So, if you say ``el=0`` and ``az=-30`` and
-then later you do ``el=30`` and ``az=0.``, it will reset the offset in
-azimuth to zero and make an offset of 30arcs in elevation.
-
-::
-
-    await atptg.cmd_offsetAzEl.set_start(el=0.,
-                                         az=-100.,
-                                             num=0)
-
-If you want to make persistent offsets you can use the following method.
-
-::
-
-    await atptg.cmd_offsetAzEl.set_start(el=0.,
-                                         az=-100.,
-                                         num=1)
-
-If you want to add your offset to a pointing model file, do the
-following.
-
-::
-
-    await atptg.cmd_pointNewFile.start()
-    await asyncio.sleep(1.)
-    await atptg.cmd_pointAddData.start()
-    await asyncio.sleep(1.)
-    await atptg.cmd_pointCloseFile.start()
-
+    exposure = isrTask.runDataRef(data_ref).exposure
 
 
 .. _liveview:
@@ -714,6 +578,11 @@ Here we describe some of the currently known issues and how to resolve them.
 ATMCS won't get out of FAULT State
 ----------------------------------
 
+.. note::
+
+    This issue has been resolved as far as we know. But, we'll keep the issue
+    and solution here in case it resurfaces.
+
 In some situations the ATMCS will go to ``FAULT`` state and it will reject the ``standby`` command,
 preventing to recover the system. We have been working on tracking this issue down but,
 should you encounter this issue it is possible to recover by pressing the e-stop button on
@@ -726,8 +595,13 @@ level) and then executing the :ref:`E-stop reset procedure <estop_reset>`. This 
 Live view server is not responding
 ----------------------------------
 
+.. note::
+
+    This issue has been considerably mitigated and the live view server will be replaced soon
+    by a view in the LOVE interface.
+
 The :ref:`live view server <fig-liveview>` that is responsible for receiving images from the
-GenericCamera and streaming it to a user we browser is still in a very rough shape. The server
+GenericCamera and streaming it to a user web browser is still in a very rough shape. The server
 connect to the GenericCamera over a TCP/IP socket and provides an image streaming server using a
 simple tornado web server. The connector that is responsible for receiving images from the
 CSC is still not capable of handling a dropped connection. That means, if there is a connection
@@ -751,6 +625,12 @@ Once the live view server is running you can detach from the container by doing 
 
 Building CSC interfaces
 -----------------------
+
+.. note::
+
+    The latest notebook servers ships with the interfaces for all available components.
+    These instructions are still useful in case you need to update the interface
+    on the fly.
 
 To communicate with a CSC, we use a class provided by ``salobj`` called ``Remote``.
 As you can see on previous sessions, the ``Remote`` receives the name of the CSC as
@@ -802,7 +682,8 @@ Again, you will need to replace ``<Component>`` by the name of the CSC.
 Advanced Operations Procedures
 ==============================
 
-This section explains advanced procedures which may be required, specifically during commissioning or during servicing. 
+This section explains advanced procedures which may be required, specifically
+during commissioning or during servicing.
 
 
 .. _estop_reset:
@@ -810,60 +691,85 @@ This section explains advanced procedures which may be required, specifically du
 E-stop Reset Procedure
 ----------------------
 
-If an E-stop has been activated (or possibly an L3 limit switch hit) then the following procedure must be followed to free the system. i
+If an E-stop has been activated (or possibly an L3 limit switch hit) then the
+following procedure must be followed to free the system. i
 
 #. Remove the issue that caused the E-stop to be activated. 
-#. Activate both E-stops, the one on the telescope control cabinet, and the one on the dome control cabinet. Both will glow red.
+#. Activate both E-stops, the one on the telescope control cabinet, and the one
+   on the dome control cabinet. Both will glow red.
 #. Release dome E-stop by turning clockwise a quarter turn or so
 #. Release main cabinet E-stop in the same manner
 #. Press the blue start button on the dome cabinet
 #. Press the blue start putton on the telescope control cabinet
 
-If this is done correctly, all three LEDs on the Pilz devices in both cabinets should be brightly illuminated, as seen in the following image. If only the main cabinet is depressed, then only the top light is bright. If only the dome cabinet is pressed, the top and bottom lights are bright.
+If this is done correctly, all three LEDs on the Pilz devices in both cabinets
+should be brightly illuminated, as seen in the following image. If only the
+main cabinet is depressed, then only the top light is bright. If only the dome
+cabinet is pressed, the top and bottom lights are bright.
 
 .. figure:: 
    _static/Pilz_Estop_reset_complete.jpg
    :scale: 25 %
    :alt: Image of Pilz controller with E-stop cleared
 
-   The Pilz controller in the Telescope Cabinet. All three lights illuminated means the E-stops are properly deactivated.
+   The Pilz controller in the Telescope Cabinet. All three lights illuminated
+       means the E-stops are properly deactivated.
 
-Note that if both E-stops are never activated simultaneously then the system will not reset.
+Note that if both E-stops are never activated simultaneously then the system
+will not reset.
 
 .. note::
-        All L3 limit switches and E-stops are run through the smart relay system. This means that if an L3 limit (which is a hardstop at the extreme end of travel of the elevation, azimuth, M3 rotator and nasmyth axes) is contacted, then it will look as if an E-stop was pressed. To identify which L3 limit was hit, one must examine the interface of the smart relay. Any active signal will not have a filled box around the central number. The central number is then mapped to a L3 using the Auxiliary Telescope Electrical Diagram (Document-26731)
+        All L3 limit switches and E-stops are run through the smart relay
+        system. This means that if an L3 limit (which is a hardstop at the
+        extreme end of travel of the elevation, azimuth, M3 rotator and
+        nasmyth axes) is contacted, then it will look as if an E-stop was
+        pressed. To identify which L3 limit was hit, one must examine the
+        interface of the smart relay. Any active signal will not have a filled
+        box around the central number. The central number is then mapped to a
+        L3 using the Auxiliary Telescope Electrical Diagram (Document-26731)
 
 .. _atmcs_gui:
 
 Viewing the ATMCS LabVIEW GUI
 ------------------------------
 
-This is the GUI developed by Rolando Cantarutti and Omar Estay to display and interact with the telescope mount at a low-level (directly from the cRIO with no SAL communication). This is not meant to be used for regular operations.
+This is the GUI developed by Rolando Cantarutti and Omar Estay to display and
+interact with the telescope mount at a low-level (directly from the cRIO with
+no SAL communication). This is not meant to be used for regular operations.
 
-Connections can currently be accomplished in two ways, the first uses a VNC connection to a windows machine currently located in the AuxTel building. The second is to login remotely using the LabVIEW Connector (requires Internet Explorer and a specific driver).
+Connections can currently be accomplished in two ways, the first uses a VNC
+connection to a windows machine currently located in the AuxTel building. The
+second is to login remotely using the LabVIEW Connector (requires Internet
+Explorer and a specific driver).
 
-#. Open an ssh tunnel to the ATMCS windows machine.
-   
-   .. code-block:: bash
-        
-	ssh -L 5900:192.168.1.49:5900 saluser@139.229.162.118
-
-#. Using RealVNC (which is required due to encryption although other clients might work) you can then connect to 'localhost' on port 5900
+#. Using RealVNC (which is required due to encryption although other clients
+    might work) connect to 'atmcs-dev.cp.lsst.org' on port 5900
 #. Enter credentials (ask Patrick or Tiago)
-#. If the GUI is not already open, then open internet explorer and enter the following address in the address bar.
+#. If the GUI is not already open, then open internet explorer and enter the
+    following address in the address bar.
    
    .. code-block:: python 
         
-	http://192.168.1.47:8000/atmcs.html
+	http://atmcs-crio.cp.lsst.org:8000/atmcs.html
 
-One can also install the `LabVIEW remote panel <http://ftp.ni.com/support/softlib/labview/labview_runtime/2010/2010Sp1%20Linux%20Temp/labview-2010-rte-10.0.1-1.i386.zip>`_ on their Windows machine (Internet Explorer only) then open a tunnel to the above IP on port 8000. This requires the download from NI, then you'll have to open the tunnel using PuTTy (or equivalent). Details will be included in the ATMCS documention upon delivery. We don't recommend this method unless absolutely necessary.
+One can also install the `LabVIEW remote panel <http://ftp.ni.com/support/softlib/labview/labview_runtime/2010/2010Sp1%20Linux%20Temp/labview-2010-rte-10.0.1-1.i386.zip>`_
+on their Windows machine (Internet Explorer only) then open a tunnel to the
+above IP on port 8000. This requires the download from NI. Details will be
+included in the ATMCS documentation upon delivery. We don't recommend this
+method unless absolutely necessary.
 
 .. _hexapod_connection_reset:
 
 Resetting the ATHexapod IP Connection
 -------------------------------------
 
-For reasons which are under investigation, occasionally after a power cycle (we think) the hexapod TCP/IP connection goes down. To reset it, one must connect a serial port to the device, establish a connection using the (windows) PIMikroMove software, close the connection, then power cycle the controller. Power cycling can be done remotely (:ref:`using the switched PDU <telescope_cabinet_pdu>`). Until this problem is resolved, we've left a permanent serial (RS-232) connection to a local windows machine.
+For reasons which are under investigation, occasionally after a power cycle
+(we think) the hexapod TCP/IP connection goes down. To reset it, one must
+connect a serial port to the device, establish a connection using the (windows)
+PIMikroMove software, close the connection, then power cycle the controller.
+Power cycling can be done remotely (:ref:`using the switched PDU
+<telescope_cabinet_pdu>`). Until this problem is resolved, we've left a
+permanent serial (RS-232) connection to a local windows machine.
 
 Follow these steps to re-establish TCP/IP connection:
 
@@ -871,8 +777,10 @@ Follow these steps to re-establish TCP/IP connection:
 #. Open PIMikroMove software from start menu
 #. Open new connection and select C-887 controller, and click connect
 #. Close connection
-#. Power cycle controller (which will cause the hexapod to lose the reference position)
-#. Put hexapod CSC in enabled state (which will send the hexapod to the reference position)
+#. Power cycle controller (which will cause the hexapod to lose the reference
+    position)
+#. Put hexapod CSC in enabled state (which will send the hexapod to the
+    reference position)
 #. Move hexapod to desired position
 
 
@@ -881,7 +789,9 @@ Follow these steps to re-establish TCP/IP connection:
 
 Mitutoyo Micrometers and Copley Controller Connections
 -------------------------------------------------------
-The mitutoyo devices (when connected) are currently controlled through the Copley PC (located in the bottom of the telescope cabinet). Connection to this Windows machine uses TeamViewer. Contact Patrick for credentials.
+The mitutoyo devices (when connected) are currently controlled through the
+Copley PC (located in the bottom of the telescope cabinet). Connection to this
+Windows machine uses TeamViewer. Contact Patrick for credentials.
 
 More details to follow.
 
@@ -890,10 +800,15 @@ More details to follow.
 Telescope Cabinet Switchable PDU
 --------------------------------
 
-In the event that a controller in the cabinet needs power cycling remotely, this may be done by logging into the switchable PDU mounted in the cabinet. The IP and connection info can be found `here <https://confluence.lsstcorp.org/x/qw6SBg>`_
+In the event that a controller in the cabinet needs power cycling remotely,
+this may be done by logging into the switchable PDU mounted in the cabinet.
+The IP and connection info can be found `here <https://confluence.lsstcorp.org/x/qw6SBg>`_
 
-* Channel 1 is connected to the main 24V supply. This will power off the cRIO (and possibly the Copley controllers, Pilz Device, and Smart Relay).
-* Channel 2 is connected to powerbar in bottom of cabinet, which has the 220V connection to the mount (which powers the Embedded PC for the Collimation Camera) as well as the hexapod connected to it.
+* Channel 1 is connected to the main 24V supply. This will power off the cRIO
+(and possibly the Copley controllers, Pilz Device, and Smart Relay).
+* Channel 2 is connected to powerbar in bottom of cabinet, which has the 220V
+connection to the mount (which powers the Embedded PC for the Collimation
+Camera) as well as the hexapod connected to it.
 
 
 
@@ -902,15 +817,28 @@ In the event that a controller in the cabinet needs power cycling remotely, this
 
 AT Dome Communication Loss
 --------------------------
-If during operation the dome controllers lose connection, which is seen either from the software, or the push-buttons fail to work, then this procedure must be followed. The dome has two types of communication failsures
+If during operation the dome controllers lose connection, which is seen either
+from the software, or the push-buttons fail to work, then this procedure must
+be followed. The dome has two types of communication failsures
 
-* The two cRIOs lose communication with each other (notably the cRIO in the rotating part of the enclosure loses connection with the bottom box and may be blocking the connection). If the CSC is connected and in disabled or enabled state, then this will be shown in the `scbLink` event (must verify). Also, this can be seen in the Main Box Dome Control LabVIEW Remote on the ATMCS machine as the `TopComms` light in the bottom left corner.
+* The two cRIOs lose communication with each other (notably the cRIO in the
+rotating part of the enclosure loses connection with the bottom box and may be
+blocking the connection). If the CSC is connected and in disabled or enabled
+state, then this will be shown in the `scbLink` event (must verify). Also, t
+his can be seen in the Main Box Dome Control LabVIEW Remote on the ATMCS
+machine as the `TopComms` light in the bottom left corner.
 
-  * Press the reset button on the cRIO inside the electrical cabinet on the rotating part of the dome (near the lower shutter) to resolve this issue
+  * Press the reset button on the cRIO inside the electrical cabinet on the
+    rotating part of the dome (near the lower shutter) to resolve this issue
 
-* The Main cRIO (located in the dome electrical cabinet on the first floor) is not correctly releasing the TCP/IP connection. This can be observed by being able to ping the box but not open a telnet connection (port 17310). Also, the HostComms light will be illuminated in the Main Box Dome Control LabVIEW remote.
+* The Main cRIO (located in the dome electrical cabinet on the first floor) is
+  not correctly releasing the TCP/IP connection. This can be observed by being
+  able to ping the box but not open a telnet connection (port 17310). Also,
+  the HostComms light will be illuminated in the Main Box Dome Control LabVIEW
+  remote.
  
-  * Press the reset button on the cRIO in the dome cabinet on the first floor to resolve this issue 
+  * Press the reset button on the cRIO in the dome cabinet on the first floor
+  to resolve this issue
 
 
 .. Add content here.
