@@ -51,7 +51,7 @@ control network. IT managed to overlay both networks so that there is no need to
 hosts to access systems on the control network from LSST network. This considerably simplify
 user access to resources avoiding the need for ssh tunnels.
 
-A list of the host computers IP address can be found
+A list of the host computers IP addresses can be found
 `here <https://confluence.lsstcorp.org/x/qw6SBg>`_.
 
 .. _tools:
@@ -297,15 +297,15 @@ data.
 
 ::
 
-    bias_data_id_list = await latiss.take_bias(nbias=10)
+    bias_exp_id_list = await latiss.take_bias(nbias=10)
 
-    dark_data_id_list = await latiss.take_darks(exptime=100., ndarks=10)
+    dark_exp_id_list = await latiss.take_darks(exptime=100., ndarks=10)
 
-    flat_data_id_list = await latiss.take_flats(exptime=5., nflats=10,
-                                                filter='blank_bk7_wg05',
-                                                grating='ronchi90lpmm')
+    flat_exp_id_list = await latiss.take_flats(exptime=5., nflats=10,
+                                               filter='blank_bk7_wg05',
+                                               grating='ronchi90lpmm')
 
-Each method will return a list of `data_id` that allows users to access the
+Each method will return a list of `expId` that allows users to access the
 data on a butler instance. We will give more details :ref:`furthermore <latiss>`.
 
 Once the calibrations are done and you are ready to open the telescope for the night,
@@ -429,15 +429,13 @@ in addition to an exposure time and number of exposures, e.g.;
 
     object_data_id_list = await latiss.take_object(exptime=5., n=10,
                                                    filter="blank_bk7_wg05",
-                                                   grating="ronchi90lpmm",
-                                                   object="Alf Vel")
+                                                   grating="ronchi90lpmm")
 
     engtst_data_id_list = await latiss.take_engtest(exptime=5., n=10,
                                                     filter="blank_bk7_wg05",
-                                                    grating="empty_1",
-                                                    object="Alf Vel - test")
+                                                    grating="empty_1")
 
-Again, the method will return a list of data ids that can be used to access
+Again, the method will return a list of exposure ids that can be used to access
 the data on the butler.
 
 ::
