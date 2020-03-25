@@ -52,7 +52,7 @@ hosts to access systems on the control network from LSST network. This considera
 user access to resources avoiding the need for ssh tunnels.
 
 A list of the host computers IP addresses can be found
-`here <https://confluence.lsstcorp.org/x/qw6SBg>`_.
+`here <https://confluence.lsstcorp.org/x/qw6SBg>`__.
 
 .. _tools:
 
@@ -112,14 +112,44 @@ We envision that Jupyter Lab servers will be a fundamental part of LSST control 
 enabling users to perform low and high level operations in a well-known and
 interactive environment.
 
-The current system deployment uses individual Jupyter Lab servers for each user running out of
-individual docker containers. In the nearby future, the plan is to start using DM LSP
-(:cite:`LDM-542`) environment to manage user servers and environment.
+.. important::
+    As of 2020/01 the old user-based Jupyter Lab server is retired.
 
-Each user receives an web address and token for an individual notebook server. With that
-information it is a matter of opening the address on a browser and entering the token
-in the login page. Once the logged in, the user should see the
+For that, users have access to a full-featured `LSST Science Platform instance at the summit`_
+(LSP, :cite:`LDM-542`). Documentation about how to use the notebook aspect of the LSP can
+be found `here <https://nb.lsst.io>`__.
+
+.. _LSST Science Platform instance at the summit: http://summit-lsp.lsst.codes/
+
+Users will need to be registered in the `rubin_summit_ops` github organization to
+have access to the summit lsp instance. Once registered to that organization,
+open the `LSST Science Platform instance at the summit`_ and follow the
+users authorization instructions.
+
+Once logged in, the user should see the :ref:`welcome page <fig-nublado-welcome>` page.
+Click in the icon bellow the "Notebook Aspect" (as indicated by the red arrow in the
+:ref:`figure <fig-nublado-welcome>`) and it will take you to the server
+:ref:`spawning interface <fig-nublado-spawn-interface>`. Select an image on the left
+hand side (preferably the recommended one) and a computing resource size on the right
+hand. The image will dictate what lsst-stack software version will be available.
+All images ship with the running version of T&S communication libraries (ts_xml,
+ts_sal, ts_salobj and ts_idl).
+In terms of computing resources, it is usually recommended to select the *Large*
+type as operations notebook can be quite heavy. Then click on the *start* button
+and wait while the server is loaded.
+
+Once the service is ready the page will be redirected to the
 :ref:`jupyter lab interface <fig-jupyter-interface>`.
+
+.. figure:: /_static/nublado-welcome-page.png
+   :name: fig-nublado-welcome
+   :target: ../_images/nublado-welcome-page.png
+   :alt: LSP welcome page
+
+.. figure:: /_static/nublado-spaw-page.png
+   :name: fig-nublado-spawn-interface
+   :target: ../_images/nublado-welcome-page.png
+   :alt: LSP spawn interface
 
 .. figure:: /_static/jupyter_interface.jpg
    :name: fig-jupyter-interface
@@ -140,9 +170,9 @@ visible to all users, :file:`shared`. Filed placed or edited here by a user in t
 will be available/modified to all the other users.
 
 The :file:`repos` directory, on the other hand, contains some basic repos that ships with the
-notebook server containing the T&S software used to power the control system. Any data in
+notebook server containing the T&S software used to power the control system. **Any data in
 this directory,
-or in the home folder, will be lost if the container is restarted. It is advisable to only keep
+or in the home folder, will be lost if the container is restarted.** It is advisable to only keep
 important data inside the user designated folder (e.g. :file:`develop`).
 
 It is also possible to access data taken with the LATISS instrument in the notebook server.
@@ -172,6 +202,11 @@ is influx, an example is shown bellow.
    :target: ../_images/love-2.jpg
    :scale: 50 %
    :alt: LOVE summary state view.
+
+.. note::
+    The LOVE interface is still at a very early stage and users may experience
+    some instabilities. Issues should be detailed in the observing log so
+    developers can work on them afterwards.
 
 .. _queue:
 
@@ -222,16 +257,17 @@ Jupyter Lab server.
 Startup procedure
 -----------------
 
-At the end of the day, before observations starts, most CSCs will be unconfigured and
+At the end of the day, before observations starts, most telescope-related
+CSCs will be unconfigured and
 in ``STANDBY`` state. The first step in starting up the system is to enable all CSCs.
 Putting a CSC in the ``ENABLED`` state requires the transition from ``STANDBY`` to
 ``DISABLED`` and then from ``DISABLED`` to ``ENABLED``. When transitioning from
 ``STANDBY`` to ``DISABLED`` it is possible to provide a ``settingsToApply`` that selects
 a configuration for the CSC. Some CSCs won't need any settings while others will.
 It is possible to check what are the available settings by looking at the ``settingVersions``
-event. Alternatively, it is also possible to let the high level control scripts to
-decide which configuration to use. In most cases, when performing regular operations,
-the auto-selection algorithm should be used.
+event in the EFD, using Chronograf. Alternatively, it is also possible to let the high level
+control scripts to decide which configuration to use. In most cases, when performing regular
+operations, the auto-selection algorithm should be used.
 
 To get started with it, make sure to open jupyter lab, navigate to the
 `~/develop/ts_notebooks/` folder nad create a directory with your username in that
@@ -350,10 +386,20 @@ Initializing ``ATTCS`` class.
     attcs = ATTCS()
     await attcs.start_task
 
-Run the slew task. This task will only finish when the telescope and the dome are
-positioned. Also, this will set the sky position angle (angle between y-axis and North) to
-be zero (or 180. if zero is not achievable). It is possible to use RA/Dec and rotator
-as hexagesimal strings or floats (and mix and match them). For instance,
+To slew the telescope and dome to a target, you should use the `slew_icrs`
+or `slew_object` task.
+Also, this will set the sky position angle (angle between y-axis and North) to
+be zero (or 180. if zero is not achievable).
+
+The ``ATTCS`` class support slewing to a target using a Simbad-resolve name.
+
+::
+
+    await attcs.slew_object(name="Alf Pav")
+
+
+It is possible to use RA/Dec as hexagesimal strings or floats (and mix and match them).
+For instance,
 
 ::
 
@@ -374,10 +420,16 @@ requested time, which will change as the telescope track the object.
 
     await attcs.slew_icrs(ra="20:25:38.85705", dec="-56:44:06.3230", rot_pos=0., target_name="Alf Pav")
 
-Note that this task still experience some undesired behaviour, like hanging in until it times out
-or returning before the end of a slew. These issues are mainly due to issues with the `ATMCS`
-either because it still fails to comply with our system architecture (like sending events in
-specific order) or due to issues with the internal control algorithms.
+In addition, it is also possible to slew to an RA/Dec and request the rotator to be positioned
+with respect to the parallactic angle. For that use the ``pa_ang`` argument instead.
+
+::
+
+    await attcs.slew_icrs(ra="20:25:38.85705", dec="-56:44:06.3230", pa_ang=0., target_name="Alf Pav")
+
+
+All rotator positioning strategies mentioned above are available in both ``slew_icrs`` and
+``slew_object`` methods.
 
 The `ATTCS` class provides a couple different ways to execute offsets with the telescope; offsets
 in Az/El, RA/Dec and xy. These can be done with the following calls, respectively
@@ -387,12 +439,12 @@ in Az/El, RA/Dec and xy. These can be done with the following calls, respectivel
 
     await attcs.offset_azel(az=100., el=100.)
 
-    await attcs.offset_radec(az=100., el=100.)
+    await attcs.offset_radec(ra=100., dec=100.)
 
-    await attcs.offset_xy(az=100., el=100.)
+    await attcs.offset_xy(x=100., y=100.)
 
-The offsets are not cumulative meaning, if you execute the same command more than once, you
-get the same offset, e.g.;
+By default, the offsets are not cumulative meaning, executing the same command more
+than once, results in the same offset, e.g.;
 
 ::
 
@@ -404,6 +456,20 @@ is equivalent to
 ::
 
     await attcs.offset_azel(az=100., el=100.)
+
+It is possible to execute cumulative offsets using the ``persistent`` option in
+the offset commands. Meaning;
+
+::
+
+    await attcs.offset_azel(az=100., el=100., persistent=True)
+    await attcs.offset_azel(az=100., el=100., persistent=True)
+
+is equivalent to
+
+::
+
+    await attcs.offset_azel(az=200., el=200.)
 
 .. _latiss:
 
@@ -503,16 +569,15 @@ rate of the stream. So far, we have tested this with up to 0.25s exposure times.
 
     await r.cmd_startLiveView.set_start(expTime=0.5)
 
-Once live view has started, make sure you have the :ref:`live view ssh rule running <chile-wget>`,
-then you should be able to access the live view server by opening ``localhost:8881`` on a
-browser.
+Once live view has started, you should be able to access the live view server by
+opening ``139.229.162.114:8881`` on a browser.
 
 .. attention::
     The web server that streams the live view data is not in a stable state. If the browser is not
     loading the page you may have to check the process running the live view server and restart
     it. Check the :ref:`issues` session for more information about how to restart it.
 
-To stop live view, you just need to run the following command.
+To stop live view, run the following command.
 
 ::
 
@@ -550,19 +615,10 @@ You can download the image on your notebook server using the following command;
 ::
 
     import wget
-    filename = wget.download(f"http://192.168.1.216:8000/{end_readout.imageName}.fits")
+    filename = wget.download(f"http://at-keener.cp.lsst.org:8000/{end_readout.imageName}.fits")
 
-Note that this only works from the Jupyter notebook server as it is connected to the control
-network.
-
-You can download the image produced by the command above on your local computer
-by running the following ``wget`` on the command line (make sure the
-:ref:`chile-wget ssh rule is running <chile-wget>`).
-
-.. prompt:: bash
-
-   wget http://localhost:8001/<image_name>
-
+The command above will work as long as the user is connected to the LSST-WAP or
+equivalent network.
 
 .. _issues:
 
@@ -711,7 +767,7 @@ cabinet is pressed, the top and bottom lights are bright.
    :alt: Image of Pilz controller with E-stop cleared
 
    The Pilz controller in the Telescope Cabinet. All three lights illuminated
-       means the E-stops are properly deactivated.
+   means the E-stops are properly deactivated.
 
 Note that if both E-stops are never activated simultaneously then the system
 will not reset.
@@ -750,6 +806,9 @@ Explorer and a specific driver).
         
 	http://atmcs-crio.cp.lsst.org:8000/atmcs.html
 
+This machine is also connected to the ATDome and the ATSpectrograph low level
+controllers EUIs.
+
 One can also install the `LabVIEW remote panel <http://ftp.ni.com/support/softlib/labview/labview_runtime/2010/2010Sp1%20Linux%20Temp/labview-2010-rte-10.0.1-1.i386.zip>`_
 on their Windows machine (Internet Explorer only) then open a tunnel to the
 above IP on port 8000. This requires the download from NI. Details will be
@@ -760,6 +819,9 @@ method unless absolutely necessary.
 
 Resetting the ATHexapod IP Connection
 -------------------------------------
+
+.. note::
+    Outdated instructions. Needs updating.
 
 For reasons which are under investigation, occasionally after a power cycle
 (we think) the hexapod TCP/IP connection goes down. To reset it, one must
@@ -798,17 +860,21 @@ More details to follow.
 Telescope Cabinet Switchable PDU
 --------------------------------
 
+.. warning::
+    DO NOT TRY THIS.
+    This PDU server is where the camera ion pump and other critical components
+    are connected. **Unless you really known what you are doing, DO NOT TRY THIS.**
+
 In the event that a controller in the cabinet needs power cycling remotely,
 this may be done by logging into the switchable PDU mounted in the cabinet.
-The IP and connection info can be found `here <https://confluence.lsstcorp.org/x/qw6SBg>`_
-
-* Channel 1 is connected to the main 24V supply. This will power off the cRIO
-(and possibly the Copley controllers, Pilz Device, and Smart Relay).
-* Channel 2 is connected to powerbar in bottom of cabinet, which has the 220V
-connection to the mount (which powers the Embedded PC for the Collimation
-Camera) as well as the hexapod connected to it.
+The IP and connection info can be found `here <https://confluence.lsstcorp.org/x/qw6SBg>`__.
 
 
+- Channel 1 is connected to the main 24V supply. This will power off the cRIO
+  (and possibly the Copley controllers, Pilz Device, and Smart Relay).
+- Channel 2 is connected to powerbar in bottom of cabinet, which has the 220V
+  connection to the mount (which powers the Embedded PC for the Collimation
+  Camera) as well as the hexapod connected to it.
 
 
 .. _atdome_communication_loss:
@@ -819,24 +885,24 @@ If during operation the dome controllers lose connection, which is seen either
 from the software, or the push-buttons fail to work, then this procedure must
 be followed. The dome has two types of communication failsures
 
-* The two cRIOs lose communication with each other (notably the cRIO in the
-rotating part of the enclosure loses connection with the bottom box and may be
-blocking the connection). If the CSC is connected and in disabled or enabled
-state, then this will be shown in the `scbLink` event (must verify). Also, t
-his can be seen in the Main Box Dome Control LabVIEW Remote on the ATMCS
-machine as the `TopComms` light in the bottom left corner.
+- The two cRIOs lose communication with each other (notably the cRIO in the
+  rotating part of the enclosure loses connection with the bottom box and may be
+  blocking the connection). If the CSC is connected and in disabled or enabled
+  state, then this will be shown in the `scbLink` event (must verify). Also, t
+  his can be seen in the Main Box Dome Control LabVIEW Remote on the ATMCS
+  machine as the `TopComms` light in the bottom left corner.
 
-  * Press the reset button on the cRIO inside the electrical cabinet on the
+  - Press the reset button on the cRIO inside the electrical cabinet on the
     rotating part of the dome (near the lower shutter) to resolve this issue
 
-* The Main cRIO (located in the dome electrical cabinet on the first floor) is
+- The Main cRIO (located in the dome electrical cabinet on the first floor) is
   not correctly releasing the TCP/IP connection. This can be observed by being
   able to ping the box but not open a telnet connection (port 17310). Also,
   the HostComms light will be illuminated in the Main Box Dome Control LabVIEW
   remote.
  
-  * Press the reset button on the cRIO in the dome cabinet on the first floor
-  to resolve this issue
+  - Press the reset button on the cRIO in the dome cabinet on the first floor
+    to resolve this issue
 
 
 .. Add content here.
